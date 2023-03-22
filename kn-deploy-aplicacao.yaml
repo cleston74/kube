@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portalkube
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: portalkube
+  template:
+    metadata:
+      labels:
+        app: portalkube
+    spec:
+      containers:
+      - name: portalkube
+        #image: fabricioveronez/kube-news:9
+        image: cleston/portalkube:v1
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+          timeoutSeconds: 5
+        startupProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+          timeoutSeconds: 5
+        livenessProbe:
+          exec:
+            command:
+            - curl
+            - -f
+            - http://localhost:8080/
+          initialDelaySeconds: 10
+          periodSeconds: 60
+          successThreshold: 1
+          failureThreshold: 3
+          timeoutSeconds: 5
+        ports:
+        - containerPort: 8080
+        env:
+        - name: DB_DATABASE
+          value: "kubenews"
+        - name: DB_USERNAME
+          value: "kubenews"
+        - name: DB_PASSWORD
+          value: "Pg#123"
+        - name: DB_HOST
+          value: "postgre"
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: portalkube
+spec:
+  selector:
+    app: portalkube
+  ports:
+  - port: 80
+    targetPort: 8080
+  type: NodePort
